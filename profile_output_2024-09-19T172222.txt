@@ -1,0 +1,81 @@
+Timer unit: 1e-09 s
+
+Total time: 9.69138 s
+File: /Users/shea/dcuments/research/psm-postdoc/code/efield-O-C=O.py
+Function: calc_efield at line 25
+
+Line #      Hits         Time  Per Hit   % Time  Line Contents
+==============================================================
+    25                                           @profile
+    26                                           def calc_efield(f, universe: mda.Universe, resid, cutoff):
+    27                                               """
+    28                                               this needs to return a 1x6 vector of the electric fields projected onto the C=O bond, at the atoms in "important_atoms"
+    29                                               """
+    30        28      51000.0   1821.4      0.0      out = np.zeros(6)
+    31                                           
+    32        28   46105000.0    2e+06      0.5      universe.trajectory[f]
+    33                                           
+    34        28     109000.0   3892.9      0.0      dims = universe.dimensions[:3]
+    35                                           
+    36        82      44000.0    536.6      0.0      for t, tail in enumerate(important_atoms):
+    37        55   35042000.0 637127.3      0.4          a0 = universe.select_atoms(f'resid {resid} and name C{t+2}1')
+    38        55   32397000.0 589036.4      0.3          a1 = universe.select_atoms(f'resid {resid} and name O{t+1}2')
+    39                                           
+    40        55     246000.0   4472.7      0.0          bond_vector = a1.positions[0] - a0.positions[0]
+    41        55     271000.0   4927.3      0.0          unit_vector = bond_vector / np.linalg.norm(bond_vector)
+    42                                           
+    43        55  263192000.0    5e+06      2.7          solvent_atoms = universe.select_atoms(f'(around {cutoff} (resid {resid} and name {" ".join(tail)})) and not (resid {resid} and name {" ".join(exclude_atoms[t])})')
+    44       219     119000.0    543.4      0.0          for a, atom in enumerate(tail):
+    45       165  102866000.0 623430.3      1.1              locatom = universe.select_atoms(f'resid {resid} and name {atom}')
+    46                                                       
+    47       165      22000.0    133.3      0.0              efield_at_locatom = 0
+    48                                           
+    49    627415 1830631000.0   2917.7     18.9              for s_atom in solvent_atoms:
+    50                                                           # print('\r', s_atom, end='')
+    51    627251 1742307000.0   2777.7     18.0                  r_i = s_atom.position - locatom.positions[0]
+    52                                                           # print(universe.dimensions[:3])
+    53    627251 1910495000.0   3045.8     19.7                  r_i -= np.round(r_i / dims) * dims  # PBC fix
+    54    627250 1442957000.0   2300.4     14.9                  distance_i = np.linalg.norm(r_i)
+    55    627250  384367000.0    612.8      4.0                  r_i_unit = r_i / distance_i
+    56                                                   #         distance_jn_bohr = distance_jn / bohr_to_angstrom
+    57    627250  555727000.0    886.0      5.7                  q_i = s_atom.charge
+    58    627250 1257846000.0   2005.3     13.0                  efield_contribution = (q_i * np.dot(r_i_unit, unit_vector)) / (distance_i ** 2)
+    59    627250   86499000.0    137.9      0.9                  efield_at_locatom += efield_contribution
+    60       164      82000.0    500.0      0.0              out[t*3+a] = efield_at_locatom
+    61        27       2000.0     74.1      0.0      return out
+
+Total time: 11.0095 s
+File: /Users/shea/dcuments/research/psm-postdoc/code/efield-O-C=O.py
+Function: main at line 65
+
+Line #      Hits         Time  Per Hit   % Time  Line Contents
+==============================================================
+    65                                           @profile
+    66                                           def main():
+    67         1       1000.0   1000.0      0.0      debug = bool(int(sys.argv[1]))
+    68         1      15000.0  15000.0      0.0      if debug: print(">>== running in debug mode\n")
+    69         2  728391000.0    4e+08      6.6      universe = mda.Universe(
+    70         1          0.0      0.0      0.0          "/Users/shea/dcuments/research/psm-2dir/8nm/DPPC/gromacs/step5_input.psf",
+    71         1          0.0      0.0      0.0          "/Users/shea/dcuments/research/psm-2dir/8nm/DPPC/gromacs/production.xtc"
+    72                                               )
+    73                                           
+    74         1     648000.0 648000.0      0.0      dppcs = universe.select_atoms('resname DPPC')
+    75         1     206000.0 206000.0      0.0      dppc_resids = np.unique(dppcs.resids)
+    76         1          0.0      0.0      0.0      num_resids = len(dppc_resids)
+    77         1          0.0      0.0      0.0      if debug: 
+    78         1     446000.0 446000.0      0.0          print(">>==", dppc_resids)
+    79         1       7000.0   7000.0      0.0          print("len(universe.trajectory)", len(universe.trajectory))
+    80                                           
+    81         1       8000.0   8000.0      0.0      output_efield = np.zeros((len(universe.trajectory), num_resids*6))
+    82         1       2000.0   2000.0      0.0      if debug: print('>>> l80'); 
+    83        28   13344000.0 476571.4      0.1      for f, (r, resid) in itertools.product(range(len(universe.trajectory)), enumerate(dppcs.residues.resids), total = len(universe.trajectory) * num_resids):
+    84                                               # for f in range(len(universe.trajectory)):
+    85                                               #     for r, resid in enumerate(dppcs.residues.resids):
+    86                                           
+    87                                                   # calc_efield(f, universe, resid, 20)
+    88                                           
+    89        28        1e+10    4e+08     93.3          output_efield[f, r*6:(r+1)*6] = calc_efield(f, universe, resid, 20)
+    90                                               np.save('DPPC-efield.npy', output_efield)
+
+  9.69 seconds - /Users/shea/dcuments/research/psm-postdoc/code/efield-O-C=O.py:25 - calc_efield
+ 11.01 seconds - /Users/shea/dcuments/research/psm-postdoc/code/efield-O-C=O.py:65 - main

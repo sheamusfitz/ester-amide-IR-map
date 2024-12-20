@@ -1,0 +1,53 @@
+Timer unit: 1e-09 s
+
+Total time: 6.33137 s
+File: /Users/shea/dcuments/research/psm-postdoc/code/efield-O-C=O.py
+Function: calc_efield at line 25
+
+Line #      Hits         Time  Per Hit   % Time  Line Contents
+==============================================================
+    25                                           @profile
+    26                                           def calc_efield(f, universe: mda.Universe, resid, cutoff):
+    27                                               """
+    28                                               this needs to return a 1x6 vector of the electric fields projected onto the C=O bond, at the atoms in "important_atoms"
+    29                                               """
+    30       231     471000.0   2039.0      0.0      out = np.zeros(6)
+    31                                           
+    32       231  552217000.0    2e+06      8.7      universe.trajectory[f]
+    33                                           
+    34       231    1258000.0   5445.9      0.0      dims = universe.dimensions[:3]
+    35                                           
+    36       692    1149000.0   1660.4      0.0      for t, tail in enumerate(important_atoms):
+    37       462  399828000.0 865428.6      6.3          a0pos = universe.select_atoms(f'resid {resid} and name C{t+2}1').positions[0]
+    38       462  367716000.0 795922.1      5.8          a1pos = universe.select_atoms(f'resid {resid} and name O{t+1}2').positions[0]
+    39                                           
+    40       462     850000.0   1839.8      0.0          bond_vector = a1pos - a0pos
+    41       462    6413000.0  13881.0      0.1          unit_vector = bond_vector / np.linalg.norm(bond_vector)
+    42                                           
+    43                                                   # solvent_atoms = universe.select_atoms(f'(around {cutoff} (resid {resid} and name {atom})) and not (resid {resid} and name {" ".join(exclude_atoms[t])})')
+    44       462 2876085000.0    6e+06     45.4          solvent_atoms = universe.select_atoms(f'(around {cutoff} (resid {resid} and name {" ".join(tail)})) and not (resid {resid} and name {" ".join(exclude_atoms[t])})')
+    45       461   23234000.0  50399.1      0.4          solvent_positions = solvent_atoms.positions
+    46       461    6247000.0  13551.0      0.1          charges = solvent_atoms.charges
+    47                                                   
+    48      1844    2771000.0   1502.7      0.0          for a, atom in enumerate(tail):
+    49      1383 1138872000.0 823479.4     18.0              locatom = universe.select_atoms(f'resid {resid} and name {atom}')
+    50      1383    6691000.0   4838.0      0.1              loc_position = locatom.positions[0]
+    51                                                       
+    52      1383    1836000.0   1327.5      0.0              efield_at_locatom = 0
+    53                                           
+    54      1383   44838000.0  32420.8      0.7              r_is = solvent_positions - loc_position
+    55                                           
+    56                                                       # for r_i in r_is:
+    57                                                       #     r_i -= np.round(r_i / dims) * dims  # PBC fix
+    58      1383   96010000.0  69421.5      1.5              r_is -= np.round(r_is / dims) * dims # PBC fix
+    59                                                       
+    60      1383   57976000.0  41920.5      0.9              distances = np.linalg.norm(r_is, axis=1)
+    61                                           
+    62      1383   29930000.0  21641.4      0.5              units = (1 / distances[:, np.newaxis]) * r_is
+    63                                           
+    64      1383  701273000.0 507066.5     11.1              efields3d = charges * np.dot(r_is, unit_vector) / distances**2
+    65                                           
+    66      1383   15402000.0  11136.7      0.2              out[t*3+a] = np.sum(efield_at_locatom)
+    67       230     307000.0   1334.8      0.0      return out
+
+  6.33 seconds - /Users/shea/dcuments/research/psm-postdoc/code/efield-O-C=O.py:25 - calc_efield
