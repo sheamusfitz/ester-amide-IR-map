@@ -17,8 +17,8 @@ important_atoms = [
     ['O32', 'C31', 'O31']
 ]
 exclude_atoms = [
-    ['C1', 'C2', 'C3', 'HA', 'HB', 'HS', 'HX', 'HY', 'C22', 'H2R', 'H2S', 'O21', 'C21', 'O22'],
-    ['C1', 'C2', 'C3', 'HA', 'HB', 'HS', 'HX', 'HY', 'C32', 'H2X', 'H2Y', 'O31', 'C31', 'O32']
+    ['C2', 'HS',          'O21', 'C21', 'O22',    'C22', 'H2S', 'H2R',    'C23', 'H3S', 'H3R'],
+    ['C3', 'HX', 'HY',    'O31', 'C31', 'O32',    'C32', 'H2X', 'H2Y',    'C33', 'H3X', 'H3Y']
 ]
 
 bohr_to_angstrom = 0.529177
